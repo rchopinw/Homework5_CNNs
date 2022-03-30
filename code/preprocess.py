@@ -85,8 +85,8 @@ class Datasets():
         #       self.mean and self.std respectively.
         # ==========================================================
 
-        self.mean = None
-        self.std = None
+        self.mean = np.mean(data_sample, axis=(1, 2, 0))
+        self.std = np.std(data_sample, axis=(1, 2, 0))
 
         # ==========================================================
 
@@ -111,7 +111,7 @@ class Datasets():
         #       the standardization.
         # =============================================================
 
-
+        img = (img - self.std) / self.mean
 
         # =============================================================
 
@@ -184,7 +184,12 @@ class Datasets():
             # ============================================================
 
             data_gen = tf.keras.preprocessing.image.ImageDataGenerator(
-                preprocessing_function=self.preprocess_fn)
+                preprocessing_function=self.preprocess_fn,
+                zoom_range=0.14,
+                rotation_range=12,
+                width_shift_range=0.15,
+                height_shift_range=0.15,
+            )
 
             # ============================================================
         else:

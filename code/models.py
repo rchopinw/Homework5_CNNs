@@ -6,7 +6,10 @@ Brown University
 
 import tensorflow as tf
 from tensorflow.keras.layers import \
-    Conv2D, MaxPool2D, Dropout, Flatten, Dense
+    Conv2D, MaxPool2D, Dropout, Flatten, Dense, GlobalAveragePooling2D, BatchNormalization, AveragePooling2D
+from tensorflow.keras.regularizers import (
+    L2
+)
 
 import hyperparameters as hp
 
@@ -20,7 +23,7 @@ class YourModel(tf.keras.Model):
         # TODO: Select an optimizer for your network (see the documentation
         #       for tf.keras.optimizers)
 
-        self.optimizer = None
+        self.optimizer = tf.keras.optimizers.Adam()
 
         # TODO: Build your own convolutional neural network, using Dropout at
         #       least once. The input image will be passed through each Keras
@@ -52,15 +55,33 @@ class YourModel(tf.keras.Model):
         #       Note: Flatten is a very useful layer. You shouldn't have to
         #             explicitly reshape any tensors anywhere in your network.
 
-        self.architecture = []
+        self.architecture = tf.keras.Sequential(
+            [
+                Conv2D(filters=64, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                BatchNormalization(),
+                Conv2D(filters=64, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                BatchNormalization(),
+                Conv2D(filters=128, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                BatchNormalization(),
+                # Dropout(0.15),
+                Conv2D(filters=128, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                BatchNormalization(),
+                # Dropout(0.15),
+                Conv2D(filters=216, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                BatchNormalization(),
+                # Dropout(0.2),
+                Conv2D(filters=512, kernel_size=3, padding='same', activation='tanh', kernel_regularizer=L2(0.001)),
+                AveragePooling2D((2, 2), padding='same'),
+                Flatten(),
+                Dense(1000, activation='relu'),
+                Dropout(0.15),
+                Dense(hp.num_classes, activation='softmax')
+            ]
+        )
 
     def call(self, x):
         """ Passes input image through the network. """
-
-        for layer in self.architecture:
-            x = layer(x)
-
-        return x
+        return self.architecture(x)
 
     @staticmethod
     def loss_fn(labels, predictions):
@@ -69,7 +90,7 @@ class YourModel(tf.keras.Model):
         # TODO: Select a loss function for your network (see the documentation
         #       for tf.keras.losses)
 
-        pass
+        return tf.keras.losses.sparse_categorical_crossentropy(labels, predictions)
 
 
 class VGGModel(tf.keras.Model):
@@ -126,9 +147,15 @@ class VGGModel(tf.keras.Model):
         #       pretrained VGG16 weights into place so that only the classificaiton
         #       head is trained.
 
+        for layer in self.vgg16:
+            layer.trainable = False
+
         # TODO: Write a classification head for our 15-scene classification task.
 
-        self.head = []
+        self.head = [
+            Flatten(),
+            Dense(15, activation='softmax')
+        ]
 
         # Don't change the below:
         self.vgg16 = tf.keras.Sequential(self.vgg16, name="vgg_base")
@@ -149,4 +176,4 @@ class VGGModel(tf.keras.Model):
         # TODO: Select a loss function for your network (see the documentation
         #       for tf.keras.losses)
 
-        pass
+        return tf.keras.losses.sparse_categorical_crossentropy(labels, predictions)
