@@ -111,7 +111,7 @@ class Datasets():
         #       the standardization.
         # =============================================================
 
-        img = (img - self.std) / self.mean
+        img = (img - self.mean) / self.std
 
         # =============================================================
 
